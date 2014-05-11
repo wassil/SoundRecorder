@@ -1,5 +1,4 @@
 package {
-	import com.adobe.serialization.json.JSON;
 	import flash.display.Sprite;
 	import flash.display.StageAlign;
 	import flash.display.StageScaleMode;
@@ -8,8 +7,10 @@ package {
 	import flash.events.StatusEvent;
 	import flash.external.ExternalInterface;
 	import flash.media.Microphone; 
+	import flash.media.MicrophoneEnhancedOptions;
 	import flash.media.Sound;
 	import flash.media.SoundChannel;
+	import flash.media.SoundCodec;
 	import flash.net.FileReference;
 	import flash.net.URLLoader;
 	import flash.net.URLLoaderDataFormat;
@@ -46,12 +47,12 @@ package {
 		}
 		
 		private function setupMic():void {
-			mic = Microphone.getMicrophone(); 
-			mic.setSilenceLevel(0, 1000); 
-			mic.gain = 50; 
-			mic.rate = 44; 
-			//mic.useEchoSuppression = true;
-			mic.encodeQuality = 10;
+			mic = Microphone.getMicrophone();
+			mic.setSilenceLevel(0, -1);
+			mic.setUseEchoSuppression(true);
+			mic.gain = 75; 
+			mic.rate = 44;
+//			mic.enhancedOptions.autoGain = true;
 		}
 		
 		private function setupButton():void {
@@ -79,8 +80,8 @@ package {
 				case RecordButton.STOP_STATE:
 					mic.removeEventListener(SampleDataEvent.SAMPLE_DATA, micSampleDataHandler); 
 					button.setState(RecordButton.PRELOAD_STATE);
-					var waveBytes:ByteArray = new WaveEncoder(1).encode(soundBytes);
-					encoder = new ShineMP3Encoder(waveBytes);
+					soundBytes = new WaveEncoder(1).encode(soundBytes);
+					encoder = new ShineMP3Encoder(soundBytes);
 					encoder.addEventListener(Event.COMPLETE, onEncoded);
 					encoder.start();
 					break;
@@ -124,10 +125,11 @@ package {
 		}
 		
 		private function uploadCompleted(e:Event):void {
+			var url:String = JSON.parse(URLLoader(e.target).data).url;
+			trace(url);
 			if (ExternalInterface.available) {
-				ExternalInterface.call("window.setAudioURL", JSON.decode(URLLoader(e.target).data).url);
+				ExternalInterface.call("window.setAudioURL", url);
 			}
-			//maybe save the returned url and change to play button
 			button.setState(RecordButton.RECORD_STATE);
 		}
 		
